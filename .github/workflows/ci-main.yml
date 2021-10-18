@@ -28,9 +28,9 @@ jobs:
       with:
         dotnet-version: ${{ env.NETCORE_VERSION }}
 
-    - name: Restore tools
-      run: dotnet tool restore      
-      working-directory: BlazorComponents
+    #- name: Restore tools
+    #  run: dotnet tool restore      
+    #  working-directory: BlazorComponents
 
     - name: Restore dependencies
       run: dotnet restore
@@ -40,7 +40,6 @@ jobs:
       
     - name: Test
       run: dotnet test -c Release --no-build --verbosity normal
-      working-directory: BlazorComponents
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.2
@@ -59,4 +58,4 @@ jobs:
         name: nugetpackage
         
     - name: Publish to nuget
-      run:  dotnet nuget push "**/vNext.BlazorComponents.*.nupkg" -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NugetApiKey }}
+      run:  dotnet nuget push "**/vNext.BlazorComponents.*.nupkg" --skip-duplicate  -s https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_KEY }}
