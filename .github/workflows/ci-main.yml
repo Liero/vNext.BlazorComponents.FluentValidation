@@ -28,9 +28,9 @@ jobs:
       with:
         dotnet-version: ${{ env.NETCORE_VERSION }}
 
-    - name: Restore tools
-      run: dotnet tool restore      
-      working-directory: BlazorComponents
+    #- name: Restore tools
+    #  run: dotnet tool restore      
+    #  working-directory: BlazorComponents
 
     - name: Restore dependencies
       run: dotnet restore
