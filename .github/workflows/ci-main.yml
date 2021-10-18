@@ -40,7 +40,6 @@ jobs:
       
     - name: Test
       run: dotnet test -c Release --no-build --verbosity normal
-      working-directory: BlazorComponents
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.2
