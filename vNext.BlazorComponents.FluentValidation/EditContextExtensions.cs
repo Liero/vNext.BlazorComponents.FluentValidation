@@ -1,7 +1,4 @@
-﻿/*
-    this code is inspired by https://github.com/Blazored/FluentValidation
- */
-#nullable enable
+﻿#nullable enable
 using FluentValidation.Results;
 using System;
 using System.Linq;
