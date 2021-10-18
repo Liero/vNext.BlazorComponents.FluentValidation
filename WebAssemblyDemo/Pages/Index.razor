@@ -1,0 +1,72 @@
+﻿@page "/"
+@using Models;
+
+
+<h1>Home</h1>
+
+<hr class="mb-5" />
+
+<EditForm Model="@Person" OnValidSubmit="@SubmitValidForm">
+    <FluentValidationValidator />
+    <ValidationSummary />
+
+    <p>
+        <label>First Name: </label>
+        <InputText @bind-Value="@Person.FirstName" />
+        <ValidationMessage For="@(() => Person.FirstName)" />
+    </p>
+
+    <p>
+        <label>Last Name: </label>
+        <InputText @bind-Value="@Person.LastName" />
+        <ValidationMessage For="@(() => Person.LastName)" />
+    </p>
+
+    <hr />
+
+    <p>
+        <label>Address: Line 1: </label>
+        <InputText @bind-Value="@Person.Address.Line1" />
+        <ValidationMessage For="@(() => Person.Address.Line1)" />
+    </p>
+
+    <p>
+        <label>Address: Line 2: </label>
+        <InputText @bind-Value="@Person.Address.Line2" />
+    </p>
+
+    <p>
+        <label>Address: Town: </label>
+        <InputText @bind-Value="@Person.Address.Town" />
+        <ValidationMessage For="@(() => Person.Address.Town)" />
+    </p>
+
+    <p>
+        <label>Address: County: </label>
+        <InputText @bind-Value="@Person.Address.County" />
+        <ValidationMessage For="@(() => Person.Address.County)" />
+    </p>
+
+    <p>
+        <label>Address: Postcode: </label>
+        <InputText @bind-Value="@Person.Address.Postcode" />
+        <ValidationMessage For="@(() => Person.Address.Postcode)" />
+    </p>
+
+    <button type="submit">Save</button>
+
+</EditForm>
+<br />
+
+@code {
+    [Inject] IJSRuntime JS { get; set; }
+
+    Person Person { get; set; } = new Person();
+
+    void SubmitValidForm()
+    {
+        JS.InvokeVoidAsync("alert", "Form Submitted Successfully!");
+    }
+
+
+}

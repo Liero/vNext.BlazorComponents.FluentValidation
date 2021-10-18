@@ -1,0 +1,58 @@
+﻿@page "/async"
+@using Models;
+
+<h1>Asynchronous Validation</h1>
+
+<hr class="mb-5" />
+
+<EditForm Model="@Model" OnSubmit="@SubmitForm">
+    <FluentValidationValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>EmailAddress: </label>
+        <InputText @bind-Value="@Model.EmailAddress" class="form-control w-auto" />
+        <ValidationMessage For="@(() => Model.EmailAddress )" />
+    </div>
+
+    @if (!ValidationRunning)
+    {
+        <button class="btn btn-primary" type="submit">Save</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" type="button" disabled>
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Validating...
+        </button>
+    }
+</EditForm>
+<br />
+
+@code {
+    [Inject] IJSRuntime JS { get; set; }
+
+    EmailModel Model { get; set; } = new EmailModel();
+
+    bool ValidationRunning { get; set; }
+
+    async Task SubmitForm(EditContext editContext)
+    {
+        ValidationRunning = true;
+        try
+        {
+            await editContext.ValidateAsync();
+            var validationResult = await editContext.GetValidationResultAsync();
+            if (validationResult.IsValid)
+            {
+                await JS.InvokeVoidAsync("alert", "Form Submitted Successfully!");
+            }
+        }
+        finally
+        {
+            ValidationRunning = false;
+        }
+    }
+
+
+}
