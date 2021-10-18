@@ -12,7 +12,7 @@
     <PackageTags>Blazor;FluentValidation;Fluent Validation;Validation;ASP.NET Core;</PackageTags>
     <PackageProjectUrl>https://github.com/Liero/vNext.BlazorComponents.FluentValidation</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!--<PackageReadmeFile>..\README.md</PackageReadmeFile>-->
     <RepositoryUrl>https://github.com/Liero/vNext.BlazorComponents.FluentValidation</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Description>A library for using FluentValidation with Blazor.
