@@ -17,7 +17,7 @@ Or via the Visual Studio package manger.
 Start by add the following using statement to your root `_Imports.razor`.
 
 ```csharp
-@using Blazored.FluentValidation
+@using vNext.BlazorComponents.FluentValidation
 ```
 
 You can then use it as follows within a `EditForm` component.
