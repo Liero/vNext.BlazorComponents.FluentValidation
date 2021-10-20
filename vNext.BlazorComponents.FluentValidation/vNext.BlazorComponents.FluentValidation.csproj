@@ -5,14 +5,14 @@
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.5.0</Version>
+    <Version>0.5.1</Version>
     <Authors>Liero; Daniel Turan</Authors>
     <Company>vNext Software Consulting</Company>
     <PackageId>vNext.BlazorComponents.FluentValidation</PackageId>
     <PackageTags>Blazor;FluentValidation;Fluent Validation;Validation;ASP.NET Core;</PackageTags>
     <PackageProjectUrl>https://github.com/Liero/vNext.BlazorComponents.FluentValidation</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <!--<PackageReadmeFile>..\README.md</PackageReadmeFile>-->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Liero/vNext.BlazorComponents.FluentValidation</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Description>A library for using FluentValidation with Blazor.
@@ -23,7 +23,7 @@ Contributors are welcome!</Description>
 
   <PropertyGroup>
     <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
@@ -36,7 +36,7 @@ Contributors are welcome!</Description>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0" />
-    <PackageReference Include="FluentValidation" Version="[10.2.1,11.0)" />
+    <PackageReference Include="FluentValidation" Version="10.0.4" />
   </ItemGroup>
 
   <ItemGroup>
