@@ -1,5 +1,5 @@
 # FluentValidation
-A library for using FluentValidation with Blazor
+A library for using FluentValidation with Blazor. It supports async validation, validation severity, rulesets and more advanced FluentValidation features.
 
 ![Build & Test Main](https://github.com/Liero/vNext.BlazorComponents.FluentValidation/workflows/Build%20&%20Test%20Main/badge.svg)
 
