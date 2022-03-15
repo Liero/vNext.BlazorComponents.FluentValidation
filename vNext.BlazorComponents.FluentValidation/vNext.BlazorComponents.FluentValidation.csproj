@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.5.1</Version>
+    <Version>1.0.0</Version>
+	<PackageVersion>1.0.0-alpha</PackageVersion>
     <Authors>Liero; Daniel Turan</Authors>
     <Company>vNext Software Consulting</Company>
     <PackageId>vNext.BlazorComponents.FluentValidation</PackageId>
@@ -35,7 +36,7 @@ Contributors are welcome!</Description>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.0" />
     <PackageReference Include="FluentValidation" Version="10.0.4" />
   </ItemGroup>
 

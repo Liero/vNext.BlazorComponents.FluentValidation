@@ -59,7 +59,7 @@
 <br />
 
 @code {
-    [Inject] IJSRuntime JS { get; set; }
+    [Inject] IJSRuntime JS { get; set; } = default!;
 
     Person Person { get; set; } = new Person();
 
