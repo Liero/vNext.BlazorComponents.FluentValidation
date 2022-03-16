@@ -6,18 +6,25 @@
 <hr class="mb-5" />
 
 <EditForm Model="@Model" OnSubmit="@SubmitForm">
-    <FluentValidationValidator />
+    <FluentValidationValidator @ref="_validator" />
     <ValidationSummary />
 
-    <div class="form-group">
-        <label>EmailAddress: </label>
+    <div class="mb-3">
+        <labe class="form-label">EmailAddress: </labe>
         <InputText @bind-Value="@Model.EmailAddress" class="form-control w-auto" />
         <ValidationMessage For="@(() => Model.EmailAddress )" />
     </div>
 
     @if (!ValidationRunning)
     {
-        <button class="btn btn-primary" type="submit">Save</button>
+        <div class="d-flex gap-3">
+            <button class="btn btn-primary" type="submit">Save</button>
+
+            @if (context.GetValidationMessages().Any())
+            {
+                <button class="btn btn-secondary" type="button" @onclick="Clear">Clear Errors</button>
+            }
+        </div>
     }
     else
     {
@@ -30,15 +37,19 @@
 <br />
 
 @code {
-    [Inject] IJSRuntime JS { get; set; }
+    FluentValidationValidator? _validator;
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
 
     EmailModel Model { get; set; } = new EmailModel();
 
     bool ValidationRunning { get; set; }
 
+
     async Task SubmitForm(EditContext editContext)
     {
         ValidationRunning = true;
+        StateHasChanged();
         try
         {
             await editContext.ValidateAsync();
@@ -52,6 +63,11 @@
         {
             ValidationRunning = false;
         }
+    }
+
+    void Clear()
+    {
+        _validator?.ClearMessages();
     }
 
 

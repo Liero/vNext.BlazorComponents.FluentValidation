@@ -1,5 +1,5 @@
 # FluentValidation
-A library for using FluentValidation with Blazor
+A library for using FluentValidation with Blazor that supports async validation, severity levels and more.
 
 ![Build & Test Main](https://github.com/Liero/vNext.BlazorComponents.FluentValidation/workflows/Build%20&%20Test%20Main/badge.svg)
 
@@ -61,31 +61,28 @@ You can then use it as follows within a `EditForm` component.
 ```
 
 ## Discovering Validators
-By default, the component will check for validators registered with DI first. If it can't find any, it will then try scanning the applications assemblies to find validators using reflection.
+The component locates validators using `IValidatorFactory` optional service.
+The `DefaultValidatorFactory` implementation check for validators registered with DI first.
 
-You can control this behaviour using the `DisableAssemblyScanning` parameter. If you only wish the component to get validators from DI, set the value to `true` and assembly scanning will be skipped.
+If it finds multiple validators, validators withing the same assembly and namespace are takes precedence. 
+If it can't find any, it will then try scanning the applications assemblies
 
-```razor
-<FluentValidationValidator DisableAssemblyScanning="@true" />
-```
-**Note:** When scanning assemblies the component will swallow any exceptions thrown by that process. This is to stop exceptions thrown by scanning third party dependencies crashing your app.
+You can override default behaviour on by registering `IValidatorFactory` service:
 
-
-For advanced scenarios, you can customize how the validators are discovered
-
-```razor
-<FluentValidationValidator ValidatorFactory="CreateValidator" />
-```
 ```csharp
-IValidator CreateValidator(ValidatorFactoryContext ctx)
-{
-    if (ctx.Model == Person.Address)
-    {
-        return new AddressValidator();
-    }
-    return (IValidator)ctx.ServiceProvider.GetService(ctx.ValidatorType);
-}
+   services.AddSingleton<IValidatorFactory>(new DefaultValidatorFactory { DisableAssemblyScanning = false })
+`
+
+or per FluentValidationValidator component
+```razor
+  <FluentValidationValidator ValidatorFactory="customValidatorFactory" />
+
+  @code {
+      IValidatorFactory customValidatorFactory = new MyCustomValidatorFactory();
+  }
 ```
+
+ See [DefaultValidatorFactory.cs](vNext.BlazorComponents.FluentValidation\DefaultValidatorFactory.cs) for more info.
 
 ## Validating Complex Models
 
