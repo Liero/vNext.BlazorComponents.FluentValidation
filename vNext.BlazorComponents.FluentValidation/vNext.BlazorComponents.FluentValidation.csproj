@@ -6,7 +6,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
-	<PackageVersion>1.0.0-alpha</PackageVersion>
+	<PackageVersion>1.0.0</PackageVersion>
     <Authors>Liero; Daniel Turan</Authors>
     <Company>vNext Software Consulting</Company>
     <PackageId>vNext.BlazorComponents.FluentValidation</PackageId>
