@@ -37,7 +37,7 @@ Contributors are welcome!</Description>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.0" />
-    <PackageReference Include="FluentValidation" Version="10.0.4" />
+    <PackageReference Include="FluentValidation" Version="10.3.3" />
   </ItemGroup>
 
   <ItemGroup>

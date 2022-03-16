@@ -19,8 +19,8 @@ namespace vNext.BlazorComponents.FluentValidation
     public class FluentValidationValidator : ComponentBase
     {
         private static readonly char[] Separators = { '.', '[' };
-        private static readonly List<string> ScannedAssembly = new List<string>();
-        private static readonly List<AssemblyScanResult> AssemblyScanResults = new List<AssemblyScanResult>();
+        private ValidationMessageStore? _validationMessageStore;
+        private ValidationResult? validationResults;
 
         [Inject] private IServiceProvider ServiceProvider { get; set; } = default!;
 
@@ -29,41 +29,38 @@ namespace vNext.BlazorComponents.FluentValidation
         [Parameter] public IValidator? Validator { get; set; }
 
         [Parameter] public Severity Severity { get; set; } = Severity.Info;
-        [Parameter] public Func<ValidatorFactoryContext, IValidator?>? ValidatorFactory { get; set; }
-        [Parameter] public Func<ValidatorFactoryContext, IValidator?>? ValidationMessageFactory { get; set; }
-        [Parameter] public bool DisableAssemblyScanning { get; set; }
+        [Parameter] public IValidatorFactory ValidatorFactory { get; set; } = default!;
+        [Parameter] public Action<ValidationStrategy<object>>? ValidationStrategyOptions { get; set; }
 
         public EditContext EditContext => CurrentEditContext ?? throw new InvalidOperationException($"{nameof(FluentValidationValidator)} requires a cascading " +
                     $"parameter of type {nameof(EditContext)}. For example, you can use {nameof(FluentValidationValidator)} " +
                     $"inside an {nameof(EditForm)}.");
 
-        protected Action<ValidationStrategy<object>>? Options { get; set; }
 
-        public virtual async Task<bool> Validate(Action<ValidationStrategy<object>>? options = null)
+        public virtual async Task<bool> Validate()
         {
-            Options = options;           
-            try
-            {
-                return await EditContext.ValidateAsync();
-            }
-            finally
-            {
-                if (Options == options)
-                {
-                    Options = null;
-                }
-            }
+            return await EditContext.ValidateAsync();
+        }
+
+        public virtual void ClearMessages()
+        {
+            _validationMessageStore!.Clear();
+            validationResults?.Errors?.Clear();
+            EditContext.NotifyValidationStateChanged();
         }
 
         protected override void OnInitialized()
         {
-            var messages = new ValidationMessageStore(EditContext);
+            ValidatorFactory ??= ServiceProvider.GetService<IValidatorFactory>() ?? new DefaultValidatorFactory();
+
+            _validationMessageStore = new ValidationMessageStore(EditContext);
+            EditContext.Properties["ValidationMessageStore"] = _validationMessageStore;
 
             EditContext.OnValidationRequested +=
-                async (sender, eventArgs) => await ValidateModel(messages);
+                async (sender, eventArgs) => await ValidateModel(_validationMessageStore);
 
             EditContext.OnFieldChanged +=
-                async (sender, eventArgs) => await ValidateField(messages, eventArgs.FieldIdentifier);
+                async (sender, eventArgs) => await ValidateField(_validationMessageStore, eventArgs.FieldIdentifier);
         }
 
         protected virtual string MapValidationFailureToMessage(ValidationFailure failure, ValidationResult result, ValidationContext<object> validationContext)
@@ -81,45 +78,7 @@ namespace vNext.BlazorComponents.FluentValidation
             object model = fieldIdentifier.Model ?? EditContext.Model;
             Type interfaceValidatorType = typeof(IValidator<>).MakeGenericType(model.GetType());
             var ctx = new ValidatorFactoryContext(interfaceValidatorType, ServiceProvider, EditContext, model, fieldIdentifier);
-
-            if (ValidatorFactory != null)
-            {
-                return ValidatorFactory(ctx);
-            }
-
-            if (ServiceProvider.GetService(interfaceValidatorType) is IValidator validator)
-            {
-                return validator;
-            }
-
-
-            if (!DisableAssemblyScanning)
-            {
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(i => i.FullName is not null && !ScannedAssembly.Contains(i.FullName)))
-                {
-                    try
-                    {
-                        AssemblyScanResults.AddRange(FindValidatorsInAssembly(assembly));
-                    }
-                    catch (Exception)
-                    {
-                    }
-
-                    ScannedAssembly.Add(assembly.FullName!);
-                }
-
-
-                Type? modelValidatorType = AssemblyScanResults.FirstOrDefault(i => interfaceValidatorType.IsAssignableFrom(i.InterfaceType))?.ValidatorType;
-
-                if (modelValidatorType == null)
-                {
-                    return null;
-                }
-
-                return (IValidator)ActivatorUtilities.CreateInstance(ServiceProvider, modelValidatorType);
-            }
-
-            return null;
+            return ValidatorFactory.CreateValidator(ctx);
         }
 
 
@@ -135,7 +94,7 @@ namespace vNext.BlazorComponents.FluentValidation
 
                 Task<ValidationResult> validateAsyncTask = validator.ValidateAsync(context);
                 EditContext.Properties[EditContextExtensions.PROPERTY_VALIDATEASYNCTASK] = validateAsyncTask;
-                ValidationResult validationResults = await validateAsyncTask;
+                validationResults = await validateAsyncTask;
 
                 messages.Clear();
                 foreach (var failure in validationResults.Errors.Where(f => f.Severity <= Severity))
@@ -182,9 +141,9 @@ namespace vNext.BlazorComponents.FluentValidation
 
         protected virtual void ConfigureValidationStrategy(ValidationStrategy<object> options, IValidator validator, FieldIdentifier fieldIdentifier = default)
         {
-            if (Options is not null)
+            if (ValidationStrategyOptions is not null)
             {
-                Options(options);
+                ValidationStrategyOptions(options);
             }
       
             if (fieldIdentifier.FieldName is not null)
