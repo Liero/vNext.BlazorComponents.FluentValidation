@@ -1,9 +1,15 @@
 # FluentValidation
-A library for using FluentValidation with Blazor that supports async validation, severity levels and more.
+A library for using FluentValidation with Blazor that supports **async validation, severity levels** and more.
+
+For introduction, see this [blog post](https://blog.vyvojari.dev/ghost/#/editor/post/616d98200141150b619fd93a)
+
+Live demo can be found here: https://blazorrepl.telerik.com/GQYpbvbP37ENDltY58
 
 ![Build & Test Main](https://github.com/Liero/vNext.BlazorComponents.FluentValidation/workflows/Build%20&%20Test%20Main/badge.svg)
 
 ![Nuget](https://img.shields.io/nuget/v/vNext.BlazorComponents.FluentValidation.svg)
+
+
 
 ### Installing
 
@@ -64,14 +70,14 @@ You can then use it as follows within a `EditForm` component.
 The component locates validators using `IValidatorFactory` optional service.
 The `DefaultValidatorFactory` implementation check for validators registered with DI first.
 
-If it finds multiple validators, validators withing the same assembly and namespace are takes precedence. 
+If it finds multiple validators, validators in the same assembly and namespace are takes precedence. 
 If it can't find any, it will then try scanning the applications assemblies
 
 You can override default behaviour on by registering `IValidatorFactory` service:
 
 ```csharp
    services.AddSingleton<IValidatorFactory>(new DefaultValidatorFactory { DisableAssemblyScanning = false })
-`
+```
 
 or per FluentValidationValidator component
 ```razor
@@ -94,7 +100,7 @@ class PersonValidator : AbstractValidator<Person>
             RuleFor(x => x.Address).SetValidator(new AddressValidator()); //must be set explicitelly
         }
 }
-class AddressValidator: AbstractValidator<Person> //should be separate class
+class AddressValidator: AbstractValidator<Address> //should be separate class
 {
         public AddressValidator() {
             RuleFor(x => x.Street).NotEmpty();
@@ -125,7 +131,7 @@ Consider following example:
 
    However, `IValidator<Address>` will not be automatically used, unless it is explicitelly defined for Address property in `IValidator<Person>`.
 
-###Common mistakes:
+### Common mistakes:
 
 Address street is validated only when user edits the input, but not on submit:
 ```csharp
