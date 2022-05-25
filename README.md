@@ -1,7 +1,7 @@
 # FluentValidation
 A library for using FluentValidation with Blazor that supports **async validation, severity levels** and more.
 
-For introduction, see this [blog post](https://blog.vyvojari.dev/ghost/#/editor/post/616d98200141150b619fd93a)
+For introduction, see this [blog post](https://blog.vyvojari.dev/advanced-validation-in-blazor-using-fluentvalidation/)
 
 Live demo can be found here: https://blazorrepl.telerik.com/GQYpbvbP37ENDltY58
 
