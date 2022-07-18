@@ -88,7 +88,7 @@ or per FluentValidationValidator component
   }
 ```
 
- See [DefaultValidatorFactory.cs](vNext.BlazorComponents.FluentValidation\DefaultValidatorFactory.cs) for more info.
+ See [DefaultValidatorFactory.cs](vNext.BlazorComponents.FluentValidation/DefaultValidatorFactory.cs) for more info.
 
 ## Validating Complex Models
 
