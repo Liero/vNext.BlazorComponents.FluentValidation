@@ -136,8 +136,8 @@ namespace vNext.BlazorComponents.FluentValidation
                         }
                         catch (InvalidOperationException ex)
                         {
-                            ServiceProvider.GetService<ILogger<FluentValidationValidator>>()?.LogError(ex, $"An error occured while parsing ValidationFailure(PropertyName={failure.PropertyName})");                            
-                        }                       
+                            ServiceProvider.GetService<ILogger<FluentValidationValidator>>()?.LogError(ex, $"An error occured while parsing ValidationFailure(PropertyName={failure.PropertyName})");
+                        }
                     }
 
                     EditContext.NotifyValidationStateChanged();
@@ -152,7 +152,7 @@ namespace vNext.BlazorComponents.FluentValidation
                     EditContext.Properties[EditContextExtensions.PROPERTY_VALIDATEASYNCTASK] = Task.FromResult(emptyValidationResult);
                 }
                 return emptyValidationResult;
-            }            
+            }
         }
 
         protected virtual async Task<ValidationResult> ValidateField(ValidationMessageStore messages, FieldIdentifier fieldIdentifier, bool updateValidationState)
@@ -234,7 +234,9 @@ namespace vNext.BlazorComponents.FluentValidation
                     // It's an indexer
                     // This code assumes C# conventions (one indexer named Item with one param)
                     nextToken = nextToken.Substring(0, nextToken.Length - 1);
-                    var prop = obj.GetType().GetProperty("Item");
+
+                    var prop = obj.GetType().GetProperties().Where(e => e.Name == "Item" && e.GetIndexParameters().Length == 1).FirstOrDefault()
+                        ?? obj.GetType().GetInterfaces().FirstOrDefault(e => e.IsGenericType && e.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) || e.GetGenericTypeDefinition() == typeof(IList<>))?.GetProperty("Item"); //e.g. arrays
 
                     if (prop is not null)
                     {
@@ -243,19 +245,13 @@ namespace vNext.BlazorComponents.FluentValidation
                         var indexerValue = Convert.ChangeType(nextToken, indexerType);
                         newObj = prop.GetValue(obj, new object[] { indexerValue });
                     }
+                    else if (obj is IEnumerable<object> objEnumerable && int.TryParse(nextToken, out int indexerValue)) //e.g. hashset
+                    {
+                        newObj = objEnumerable.ElementAt(indexerValue);
+                    }
                     else
                     {
-                        // If there is no Item property
-                        // Try to cast the object to array
-                        if (obj is object[] array)
-                        {
-                            var indexerValue = Convert.ToInt32(nextToken);
-                            newObj = array[indexerValue];
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException($"Could not find indexer on object of type {obj.GetType().FullName}.");
-                        }
+                        throw new InvalidOperationException($"Could not find indexer on object of type {obj.GetType().FullName}.");
                     }
                 }
                 else
