@@ -5,8 +5,8 @@
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.0</Version>
-	<PackageVersion>1.0.0</PackageVersion>
+    <Version>1.1.0</Version>
+	<PackageVersion>1.1.0</PackageVersion>
     <Authors>Liero; Daniel Turan</Authors>
     <Company>vNext Software Consulting</Company>
     <PackageId>vNext.BlazorComponents.FluentValidation</PackageId>
@@ -16,7 +16,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Liero/vNext.BlazorComponents.FluentValidation</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <Description>A library for using FluentValidation with Blazor.
+    <Description>A battle tested library for using FluentValidation with Blazor.
 Supports async validation, validation severity, custom rulesets and is open for extensibility.
 
 Contributors are welcome!</Description>
