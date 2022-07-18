@@ -8,11 +8,12 @@ using FluentValidation.Results;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
-using static FluentValidation.AssemblyScanner;
 
 namespace vNext.BlazorComponents.FluentValidation
 {
@@ -28,7 +29,16 @@ namespace vNext.BlazorComponents.FluentValidation
 
         [Parameter] public IValidator? Validator { get; set; }
 
+        /// <summary>
+        /// Minimum severity to be treated as an error.
+        /// For example, if Severity == Error, then any validation messages with Severity warning will be ignored
+        /// </summary>
         [Parameter] public Severity Severity { get; set; } = Severity.Info;
+
+        /// <summary>
+        /// Determines how validator are resolved for <see cref="EditContext.Model"/>, or <see cref="FieldIdentifier.Model"/> in case of complex models
+        /// </summary>
+        /// <seealso cref="DefaultValidatorFactory"/>
         [Parameter] public IValidatorFactory ValidatorFactory { get; set; } = default!;
         [Parameter] public Action<ValidationStrategy<object>>? ValidationStrategyOptions { get; set; }
 
@@ -36,17 +46,42 @@ namespace vNext.BlazorComponents.FluentValidation
                     $"parameter of type {nameof(EditContext)}. For example, you can use {nameof(FluentValidationValidator)} " +
                     $"inside an {nameof(EditForm)}.");
 
+        public ValidationMessageStore ValidationMessageStore => _validationMessageStore ?? throw new InvalidOperationException("FluentValidationValidator not initialized.");
 
         public virtual async Task<bool> Validate()
         {
             return await EditContext.ValidateAsync();
         }
 
+        public virtual Task<ValidationResult> ValidateModelAsync(bool updateValidationState = true)
+            => ValidateModel(ValidationMessageStore, updateValidationState);
+
+        public virtual Task<ValidationResult> ValidateFieldAsync(Expression<Func<object>> accessor, bool updateValidationState = true)
+            => ValidateFieldAsync(FieldIdentifier.Create(accessor), updateValidationState);
+
+        public virtual async Task<ValidationResult> ValidateFieldAsync(FieldIdentifier fieldIdentifier, bool updateValidationState = true)
+            => await ValidateField(ValidationMessageStore, fieldIdentifier, updateValidationState);
+
+
         public virtual void ClearMessages()
         {
-            _validationMessageStore!.Clear();
+            _validationMessageStore?.Clear();
             validationResults?.Errors?.Clear();
             EditContext.NotifyValidationStateChanged();
+        }
+
+        /// <summary>
+        /// get validator for <see cref="FieldIdentifier.Model"/> of <paramref name="fieldIdentifier"/>. 
+        /// If <paramref name="fieldIdentifier"/> is default, return <see cref="EditContext.Model"/>
+        /// </summary>       
+        /// <seealso cref="ValidatorFactory"/>
+        public virtual IValidator? ResolveValidator(FieldIdentifier fieldIdentifier = default)
+        {
+            if (EditContext == null) throw new InvalidOperationException("EditContext is null");
+            object model = fieldIdentifier.Model ?? EditContext.Model;
+            Type interfaceValidatorType = typeof(IValidator<>).MakeGenericType(model.GetType());
+            var ctx = new ValidatorFactoryContext(interfaceValidatorType, ServiceProvider, EditContext, model, fieldIdentifier);
+            return ValidatorFactory.CreateValidator(ctx);
         }
 
         protected override void OnInitialized()
@@ -57,10 +92,10 @@ namespace vNext.BlazorComponents.FluentValidation
             EditContext.Properties["ValidationMessageStore"] = _validationMessageStore;
 
             EditContext.OnValidationRequested +=
-                async (sender, eventArgs) => await ValidateModel(_validationMessageStore);
+                async (sender, eventArgs) => await ValidateModel(ValidationMessageStore, true);
 
             EditContext.OnFieldChanged +=
-                async (sender, eventArgs) => await ValidateField(_validationMessageStore, eventArgs.FieldIdentifier);
+                async (sender, eventArgs) => await ValidateField(ValidationMessageStore, eventArgs.FieldIdentifier, true);
         }
 
         protected virtual string MapValidationFailureToMessage(ValidationFailure failure, ValidationResult result, ValidationContext<object> validationContext)
@@ -72,62 +107,79 @@ namespace vNext.BlazorComponents.FluentValidation
             return $"[{failure.Severity}] {failure.ErrorMessage}";
         }
 
-        protected virtual IValidator? GetValidator(FieldIdentifier fieldIdentifier = default)
+        protected virtual async Task<ValidationResult> ValidateModel(ValidationMessageStore messages, bool updateValidationState)
         {
-            if (EditContext == null) throw new InvalidOperationException("EditContext is null");
-            object model = fieldIdentifier.Model ?? EditContext.Model;
-            Type interfaceValidatorType = typeof(IValidator<>).MakeGenericType(model.GetType());
-            var ctx = new ValidatorFactoryContext(interfaceValidatorType, ServiceProvider, EditContext, model, fieldIdentifier);
-            return ValidatorFactory.CreateValidator(ctx);
-        }
-
-
-        protected virtual async Task ValidateModel(ValidationMessageStore messages)
-        {
-            if (EditContext == null) throw new InvalidOperationException("EditContext is null");
-
-            IValidator? validator = GetValidator();
+            IValidator? validator = ResolveValidator();
 
             if (validator is not null)
             {
                 ValidationContext<object> context = CreateValidationContext(validator);
 
+
                 Task<ValidationResult> validateAsyncTask = validator.ValidateAsync(context);
-                EditContext.Properties[EditContextExtensions.PROPERTY_VALIDATEASYNCTASK] = validateAsyncTask;
-                validationResults = await validateAsyncTask;
-
-                messages.Clear();
-                foreach (var failure in validationResults.Errors.Where(f => f.Severity <= Severity))
+                if (updateValidationState)
                 {
-                    var fieldIdentifier = ToFieldIdentifier(EditContext, failure.PropertyName);
-                    string errorMessage = MapValidationFailureToMessage(failure, validationResults, context);
-                    messages.Add(fieldIdentifier, errorMessage);
+                    EditContext.Properties[EditContextExtensions.PROPERTY_VALIDATEASYNCTASK] = validateAsyncTask;
                 }
+                var validationResults = await validateAsyncTask;
+                if (updateValidationState)
+                {
+                    this.validationResults = validationResults;
+                    messages.Clear();
+                    foreach (var failure in validationResults.Errors.Where(f => f.Severity <= Severity))
+                    {
+                        try
+                        {
+                            var fieldIdentifier = ToFieldIdentifier(EditContext, failure.PropertyName);
+                            string errorMessage = MapValidationFailureToMessage(failure, validationResults, context);
+                            messages.Add(fieldIdentifier, errorMessage);
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            ServiceProvider.GetService<ILogger<FluentValidationValidator>>()?.LogError(ex, $"An error occured while parsing ValidationFailure(PropertyName={failure.PropertyName})");
+                        }
+                    }
 
-                EditContext.NotifyValidationStateChanged();
+                    EditContext.NotifyValidationStateChanged();
+                }
+                return validationResults;
+            }
+            else
+            {
+                var emptyValidationResult = new ValidationResult();
+                if (updateValidationState)
+                {
+                    EditContext.Properties[EditContextExtensions.PROPERTY_VALIDATEASYNCTASK] = Task.FromResult(emptyValidationResult);
+                }
+                return emptyValidationResult;
             }
         }
 
-        protected virtual async Task ValidateField(ValidationMessageStore messages, FieldIdentifier fieldIdentifier)
+        protected virtual async Task<ValidationResult> ValidateField(ValidationMessageStore messages, FieldIdentifier fieldIdentifier, bool updateValidationState)
         {
             var properties = new[] { fieldIdentifier.FieldName };
 
-            IValidator? validator = GetValidator(fieldIdentifier);
+            IValidator? validator = ResolveValidator(fieldIdentifier);
 
             if (validator is not null)
             {
                 var context = CreateValidationContext(validator, fieldIdentifier);
                 var validationResults = await validator.ValidateAsync(context);
 
-                messages.Clear(fieldIdentifier);
-                var fieldMessages = validationResults.Errors
-                    .Where(failure => failure.Severity <= Severity)
-                    .Select(failure => MapValidationFailureToMessage(failure, validationResults, context));
+                if (updateValidationState)
+                {
+                    messages.Clear(fieldIdentifier);
+                    var fieldMessages = validationResults.Errors
+                        .Where(failure => failure.Severity <= Severity)
+                        .Select(failure => MapValidationFailureToMessage(failure, validationResults, context));
 
-                messages.Add(fieldIdentifier, fieldMessages);
+                    messages.Add(fieldIdentifier, fieldMessages);
+                    EditContext.NotifyValidationStateChanged();
+                }
 
-                EditContext.NotifyValidationStateChanged();
+                return validationResults;
             }
+            return new ValidationResult();
         }
 
         protected virtual ValidationContext<object> CreateValidationContext(IValidator validator, FieldIdentifier fieldIdentifier = default)
@@ -145,12 +197,12 @@ namespace vNext.BlazorComponents.FluentValidation
             {
                 ValidationStrategyOptions(options);
             }
-      
+
             if (fieldIdentifier.FieldName is not null)
             {
                 options.IncludeProperties(fieldIdentifier.FieldName);
             }
-            
+
         }
 
         protected static FieldIdentifier ToFieldIdentifier(EditContext editContext, string propertyPath)
@@ -182,7 +234,9 @@ namespace vNext.BlazorComponents.FluentValidation
                     // It's an indexer
                     // This code assumes C# conventions (one indexer named Item with one param)
                     nextToken = nextToken.Substring(0, nextToken.Length - 1);
-                    var prop = obj.GetType().GetProperty("Item");
+
+                    var prop = obj.GetType().GetProperties().Where(e => e.Name == "Item" && e.GetIndexParameters().Length == 1).FirstOrDefault()
+                        ?? obj.GetType().GetInterfaces().FirstOrDefault(e => e.IsGenericType && e.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) || e.GetGenericTypeDefinition() == typeof(IList<>))?.GetProperty("Item"); //e.g. arrays
 
                     if (prop is not null)
                     {
@@ -191,19 +245,13 @@ namespace vNext.BlazorComponents.FluentValidation
                         var indexerValue = Convert.ChangeType(nextToken, indexerType);
                         newObj = prop.GetValue(obj, new object[] { indexerValue });
                     }
+                    else if (obj is IEnumerable<object> objEnumerable && int.TryParse(nextToken, out int indexerValue)) //e.g. hashset
+                    {
+                        newObj = objEnumerable.ElementAt(indexerValue);
+                    }
                     else
                     {
-                        // If there is no Item property
-                        // Try to cast the object to array
-                        if (obj is object[] array)
-                        {
-                            var indexerValue = Convert.ToInt32(nextToken);
-                            newObj = array[indexerValue];
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException($"Could not find indexer on object of type {obj.GetType().FullName}.");
-                        }
+                        throw new InvalidOperationException($"Could not find indexer on object of type {obj.GetType().FullName}.");
                     }
                 }
                 else

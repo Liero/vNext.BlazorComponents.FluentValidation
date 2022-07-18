@@ -1,5 +1,5 @@
 # FluentValidation
-A library for using FluentValidation with Blazor that supports **async validation, severity levels** and more.
+A battle tested library for using FluentValidation with Blazor that supports **async validation, severity levels** and more.
 
 For introduction, see this [blog post](https://blog.vyvojari.dev/advanced-validation-in-blazor-using-fluentvalidation/)
 
@@ -88,7 +88,7 @@ or per FluentValidationValidator component
   }
 ```
 
- See [DefaultValidatorFactory.cs](vNext.BlazorComponents.FluentValidation\DefaultValidatorFactory.cs) for more info.
+ See [DefaultValidatorFactory.cs](vNext.BlazorComponents.FluentValidation/DefaultValidatorFactory.cs) for more info.
 
 ## Validating Complex Models
 
