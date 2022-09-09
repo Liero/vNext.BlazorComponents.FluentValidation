@@ -11,8 +11,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace vNext.BlazorComponents.FluentValidation
@@ -115,7 +117,6 @@ namespace vNext.BlazorComponents.FluentValidation
             {
                 ValidationContext<object> context = CreateValidationContext(validator);
 
-
                 Task<ValidationResult> validateAsyncTask = validator.ValidateAsync(context);
                 if (updateValidationState)
                 {
@@ -128,15 +129,18 @@ namespace vNext.BlazorComponents.FluentValidation
                     messages.Clear();
                     foreach (var failure in validationResults.Errors.Where(f => f.Severity <= Severity))
                     {
+                        string errorMessage = MapValidationFailureToMessage(failure, validationResults, context);
+                        ILogger<FluentValidationValidator>? logger = null;
                         try
                         {
                             var fieldIdentifier = ToFieldIdentifier(EditContext, failure.PropertyName);
-                            string errorMessage = MapValidationFailureToMessage(failure, validationResults, context);
                             messages.Add(fieldIdentifier, errorMessage);
                         }
                         catch (InvalidOperationException ex)
                         {
-                            ServiceProvider.GetService<ILogger<FluentValidationValidator>>()?.LogError(ex, $"An error occured while parsing ValidationFailure(PropertyName={failure.PropertyName})");
+                            logger ??= ServiceProvider.GetService<ILogger<FluentValidationValidator>>();
+                            logger?.LogError(ex, $"An error occured while parsing ValidationFailure(PropertyName={failure.PropertyName})");
+                            messages.Add(new FieldIdentifier(context.InstanceToValidate, string.Empty), errorMessage);
                         }
                     }
 
@@ -220,7 +224,7 @@ namespace vNext.BlazorComponents.FluentValidation
             while (true)
             {
                 var nextTokenEnd = propertyPath.IndexOfAny(Separators);
-                if (nextTokenEnd < 0)
+                if (nextTokenEnd <= 0)
                 {
                     return new FieldIdentifier(obj, propertyPath);
                 }
@@ -242,7 +246,7 @@ namespace vNext.BlazorComponents.FluentValidation
                     {
                         // we've got an Item property
                         var indexerType = prop.GetIndexParameters()[0].ParameterType;
-                        var indexerValue = Convert.ChangeType(nextToken, indexerType);
+                        var indexerValue = Convert.ChangeType(nextToken, indexerType, CultureInfo.InvariantCulture);
                         newObj = prop.GetValue(obj, new object[] { indexerValue });
                     }
                     else if (obj is IEnumerable<object> objEnumerable && int.TryParse(nextToken, out int indexerValue)) //e.g. hashset
