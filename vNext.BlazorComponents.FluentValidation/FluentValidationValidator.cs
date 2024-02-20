@@ -80,6 +80,8 @@ namespace vNext.BlazorComponents.FluentValidation
         public virtual IValidator? ResolveValidator(FieldIdentifier fieldIdentifier = default)
         {
             if (EditContext == null) throw new InvalidOperationException("EditContext is null");
+            if (Validator != null) return Validator;
+
             object model = fieldIdentifier.Model ?? EditContext.Model;
             Type interfaceValidatorType = typeof(IValidator<>).MakeGenericType(model.GetType());
             var ctx = new ValidatorFactoryContext(interfaceValidatorType, ServiceProvider, EditContext, model, fieldIdentifier);

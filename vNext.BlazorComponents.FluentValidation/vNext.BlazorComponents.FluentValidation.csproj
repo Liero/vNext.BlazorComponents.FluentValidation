@@ -5,8 +5,8 @@
 
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.1.1</Version>
-	<PackageVersion>1.1.1</PackageVersion>
+    <Version>1.1.2</Version>
+	<PackageVersion>1.1.2</PackageVersion>
     <Authors>Liero; Daniel Turan</Authors>
     <Company>vNext Software Consulting</Company>
     <PackageId>vNext.BlazorComponents.FluentValidation</PackageId>
